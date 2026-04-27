@@ -1,0 +1,28 @@
+Files in this directory contain material derived from the FreeBSD Project.
+
+Primary upstream sources include:
+
+    src/sys/dev/rge/
+    src/sys/dev/mii/
+
+Used for:
+
+    - Realtek hardware register definitions
+    - PHY initialization sequences
+    - descriptor formats
+    - compatibility and device revision handling
+    - MII/PHY support definitions
+
+The imported material has been modified for illumos integration,
+including:
+
+    - GLDv3 MAC framework conversion
+    - illumos DMA and interrupt APIs
+    - multiqueue MSI-X support
+    - kstat integration
+    - FMA topology sensor support
+    - illumos build and driver model adaptation
+
+License:
+
+    BSD 2-Clause License

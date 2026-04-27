@@ -1,0 +1,83 @@
+Realtek RTL8125/RTL8126/RTL8127 Driver for illumos
+==================================================
+
+Overview
+--------
+
+This directory contains an illumos GLDv3 network driver for modern
+Realtek PCIe Ethernet controllers, including:
+
+    RTL8125   (up to 2.5 Gigabit Ethernet)
+    RTL8126   (up to 5 Gigabit Ethernet)
+    RTL8127   (up to 10 Gigabit Ethernet)
+
+The driver is intended for newer RTL8125-class devices and later.
+Legacy RTL8169 / RTL8168 / RTL8111 generations are outside the primary support
+scope.
+
+Origin
+------
+
+This driver includes material derived from the FreeBSD re(4) driver and
+related Realtek hardware definitions.
+
+Large portions of the hardware register definitions, PHY programming
+sequences, descriptor formats and compatibility logic were originally
+developed in the FreeBSD project.
+
+The illumos version has been substantially reworked for:
+
+    - GLDv3 MAC framework integration
+    - illumos DMA interfaces
+    - illumos interrupt framework
+    - MSI-X multiqueue operation
+    - kstat statistics
+    - FMA topology temperature sensor integration
+    - illumos driver lifecycle and attach/detach model
+
+Features
+--------
+
+Current driver capabilities include:
+
+    - MSI-X and MSI interrupt support
+    - Multiqueue RX/TX operation
+    - RSS receive scaling
+    - Checksum offload
+    - Configurable advertised link speeds
+    - Timer interrupt compatibility mode
+    - Temperature monitoring on supported chips
+    - RTL8125B / RTL8126 / RTL8127 support
+
+Configuration
+-------------
+
+Driver tunables may be placed in:
+
+    /kernel/drv/re.conf
+
+Example:
+
+    force_msi=0;
+    timer_int_enable=0;
+    timer_count=9728;
+
+Notes
+-----
+
+PCIe ASPM policy should normally be controlled by system firmware.
+If unexplained stalls or interrupt loss occur, disabling ASPM in BIOS/UEFI
+may improve stability on some systems.
+
+Licensing
+---------
+
+This driver contains code derived from FreeBSD sources distributed under
+the BSD 2-Clause license.
+
+See:
+
+    THIRDPARTYLICENSE
+    THIRDPARTYLICENSE.descrip
+
+for additional details.

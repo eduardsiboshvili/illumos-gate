@@ -1,0 +1,199 @@
+.\"
+.\" This file and its contents are supplied under the terms of the
+.\" Common Development and Distribution License ("CDDL"), version 1.0.
+.\" You may only use this file in accordance with the terms of version
+.\" 1.0 of the CDDL.
+.\"
+.\" A full copy of the text of the CDDL should have accompanied this
+.\" source.  A copy of the CDDL is also available via the Internet at
+.\" http://www.illumos.org/license/CDDL.
+.\"
+.Dd April 27, 2026
+.Dt RE 4D
+.Os
+.Sh NAME
+.Nm re
+.Nd Realtek RTL8125/RTL8126/RTL8127 Ethernet Driver
+.Sh SYNOPSIS
+.Pa /dev/net/re*
+.Sh DESCRIPTION
+The
+.Nm
+driver is a GLDv3 NIC driver for modern Realtek PCIe Ethernet
+controllers.
+Supported controller families include:
+.Bl -bullet
+.It
+RTL8125 devices supporting speeds up to 2.5 Gbit/s
+.It
+RTL8126 devices supporting speeds up to 5 Gbit/s
+.It
+RTL8127 devices supporting speeds up to 10 Gbit/s
+.El
+.Pp
+The
+.Nm
+driver supports checksum offload, MSI-X and MSI interrupts, multiple
+receive and transmit queues on supported hardware, RSS receive
+distribution, link state reporting, MAC properties, configurable
+advertised link capabilities and temperature monitoring on supported
+revisions.
+.Pp
+The driver is intended for RTL8125-class and newer devices.
+Older RTL8169/RTL8111 families are outside the intended support scope.
+.Pp
+For each device supported by the
+.Nm
+driver, a character special file is created under
+.Pa /dev/net .
+The first instance has id 0 and is named
+.Sy re0 ,
+available at
+.Pa /dev/net/re0 .
+The device supports the Data Link Provider Interface
+.Pq DLPI ,
+documented in
+.Xr dlpi 4P
+and commonly accessed through
+.Xr libdlpi 3LIB .
+.Sh LINK CONFIGURATION
+The
+.Nm
+driver supports link mode configuration through
+.Xr dladm 8 .
+Supported properties include auto-negotiation, advertised link
+capabilities and pause frame configuration.
+.Pp
+The exact set of available speeds depends on the controller revision and
+link partner capability.
+RTL8125 devices support speeds up to 2.5 Gbit/s, RTL8126 devices support
+speeds up to 5 Gbit/s, and RTL8127 devices support speeds up to 10 Gbit/s.
+.Pp
+Manual speed selection is implemented by configuring the advertised PHY
+capabilities.
+The driver keeps PHY autonegotiation enabled and restarts
+autonegotiation after advertised capabilities are changed.
+.Sh INTERRUPTS
+The
+.Nm
+driver supports MSI-X and MSI interrupt delivery.
+MSI-X is preferred when available because it allows queue-specific
+interrupt handling and improved scalability.
+MSI is used as a single-vector fallback mode.
+.Pp
+On supported systems the driver may use multiple receive and transmit
+queues when sufficient MSI-X resources are available.
+.Pp
+If the platform cannot provide the required MSI-X vectors, the driver
+automatically falls back to MSI mode.
+.Sh TIMER INTERRUPT MODE
+The
+.Nm
+driver provides an optional timer interrupt mode configured through
+.Pa re.conf .
+This mode is intended as a compatibility and stability option for systems
+where direct interrupt completion handling is unreliable.
+.Pp
+The recommended vendor default timer value is:
+.Bd -literal -offset indent
+timer_count=9728;
+.Ed
+.Pp
+This value is equivalent to:
+.Bd -literal -offset indent
+0x2600
+.Ed
+.Pp
+When used in MSI mode, timer interrupt mode causes the controller to
+generate interrupts continuously at the configured timer rate,
+independent of traffic load.
+.Pp
+For example, on RTL8125B with the default
+.Sy timer_count=9728 ,
+the interrupt rate is approximately 8700 interrupts per second.
+.Pp
+This mode may improve compatibility on systems affected by missed
+interrupts or unstable completion handling, at the cost of increased CPU
+interrupt load.
+.Pp
+When MSI-X mode is active, enabling timer interrupts enables hardware
+interrupt mitigation.
+Under high packet rates, multiple packet completions may be grouped into
+fewer interrupts, reducing CPU overhead.
+.Pp
+The default configuration should be used unless system-specific behavior
+requires tuning.
+.Sh TEMPERATURE MONITORING
+Selected controllers provide an internal temperature sensor exposed
+through the illumos Fault Management Architecture
+.Pq FMA
+topology framework.
+.Pp
+Temperature monitoring is supported on RTL8125B and newer revisions,
+including supported RTL8126 and RTL8127 controllers.
+.Pp
+If no sensor is displayed, the installed controller revision may not
+provide a readable temperature sensor or support may be unavailable for
+that hardware revision.
+.Pp
+Reported values represent controller internal temperature estimates and
+are most useful for trend monitoring.
+.Sh CONFIGURATION
+Driver tunables may be placed in:
+.Pa /kernel/drv/re.conf
+.Pp
+The following properties are supported:
+.Bl -tag -width Sy
+.It Sy force_msi
+Select interrupt mode.
+A value of 0 enables automatic selection.
+A value of 1 forces MSI/MSI-X operation and disables legacy fallback.
+.It Sy timer_int_enable
+Enable timer interrupt mode.
+A value of 0 disables the feature.
+A value of 1 enables the feature.
+.It Sy timer_count
+Timer interrupt counter value.
+The recommended vendor default is 9728.
+.El
+.Pp
+The default configuration should be used unless the system exhibits
+interrupt loss, TX/RX stalls or other platform-specific instability.
+.Sh EXAMPLES
+Display temperature sensor information for
+.Sy re0 :
+.Bd -literal -offset indent
+# /usr/lib/fm/fmd/fmtopo -V '*re0*'
+.Ed
+.Pp
+Example
+.Pa /kernel/drv/re.conf :
+.Bd -literal -offset indent
+#
+# re.conf -- Realtek re driver tunables
+#
+
+force_msi=0;
+timer_int_enable=0;
+timer_count=9728;
+.Ed
+.Sh FILES
+.Bl -tag -width Pa
+.It Pa /kernel/drv/amd64/re
+Device driver, x86 systems
+.It Pa /kernel/drv/re.conf
+Driver configuration file
+.It Pa /dev/net/re*
+Network device nodes
+.El
+.Sh SEE ALSO
+.Xr libdlpi 3LIB ,
+.Xr dlpi 4P ,
+.Xr dladm 8
+.Sh NOTES
+PCIe ASPM and power-management policy should normally be controlled by
+system firmware.
+Some controller revisions are sensitive to runtime PCIe power-management
+changes.
+If unexplained packet stalls, interrupt loss or link instability occur,
+disable ASPM in BIOS or UEFI firmware before adding driver workarounds.
